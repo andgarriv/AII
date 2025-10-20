@@ -27,3 +27,4 @@ coverage.xml
 *.py,cover
 */migrations/*
 !*/migrations/__init__.py
+*.db
