@@ -9,6 +9,7 @@ from whoosh.index import create_in,open_dir
 from whoosh.fields import Schema, TEXT, NUMERIC, KEYWORD, ID
 from whoosh.qparser import QueryParser
 
+
 PAGINAS = 4  #nÃºmero de pÃ¡ginas
 
 # lineas para evitar error SSL
