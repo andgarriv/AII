@@ -1,206 +1,337 @@
-#encoding:utf-8
+# encoding:utf-8
 
+from datetime import datetime
 from bs4 import BeautifulSoup
 import urllib.request
 from tkinter import *
 from tkinter import messagebox
-import re, os, shutil
-from datetime import datetime
+import re, shutil
 from whoosh.index import create_in,open_dir
-from whoosh.fields import Schema, TEXT, DATETIME, ID
+from whoosh.fields import Schema, TEXT, NUMERIC, KEYWORD, ID, DATETIME
 from whoosh.qparser import QueryParser
-from datetime import datetime
 import locale
+from whoosh import index, query
 
-PAGINAS = 2  #nÃºmero de pÃ¡ginas
+
+PAGINAS = 4
 
 # lineas para evitar error SSL
-import os, ssl
-if (not os.environ.get('PYTHONHTTPSVERIFY', '') and
-getattr(ssl, '_create_unverified_context', None)):
+import os
+import ssl
+if (not os.environ.get('PYTHONHTTPSVERIFY', '') and getattr(ssl, '_create_unverified_context', None)):
     ssl._create_default_https_context = ssl._create_unverified_context
 
+
 def cargar():
-    respuesta = messagebox.askyesno(title="Confirmar",message="Esta seguro que quiere recargar los datos. \nEsta operaciÃ³n puede ser lenta")
+    respuesta = messagebox.askyesno(title="Confirmar",message="¿Esta seguro que quiere recargar los datos?. \nEsta operación puede ser lenta")
     if respuesta:
         almacenar_datos()
-        
-def extraer_noticias():
-    locale.setlocale(locale.LC_TIME, "es_ES") # activa formato en espaÃ±ol
-    
-    lista=[]
-    
-    for p in range(1,PAGINAS+1):
-        req = urllib.request.Request("https://muzikalia.com/category/noticia/page/"+str(p)+"/", headers={'User-Agent': 'Mozilla/5.0'})
-        f = urllib.request.urlopen(req)
-        s = BeautifulSoup(f, 'lxml')
-        l = s.find_all('article', class_='category-noticia')
 
-        for i in l:
-            titulo = i.find('h2', class_='cm-entry-title').a.string
-            enlace = i.find('h2', class_='cm-entry-title').a['href']
-            d = i.find('time').string
-            fecha = datetime.strptime(d.strip(), "%d %B, %Y")
-            descripcion = i.find('div', class_='cm-entry-summary').p.string
-            autor = i.find('span',class_='cm-author').a.string.strip()
-                                          
-            lista.append((fecha, titulo, enlace, descripcion, autor))
+
+def extraer_eventos():
+    lista = []
+    for p in range(1, PAGINAS + 1):
+        url = "https://sevilla.cosasdecome.es/eventos/filtrar?pg=" + str(p)
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        f = urllib.request.urlopen(urllib.request.Request(url, headers=headers))
+        s = BeautifulSoup(f,"lxml")
+        detalles = s.find_all("div", class_="post-details")
+        if detalles:
+            enlaces = [i.find("a")['href'] for i in detalles]
+        for enlace in enlaces:
+            headers = {'User-Agent': 'Mozilla/5.0'}
+            f = urllib.request.urlopen(urllib.request.Request(enlace, headers=headers))
+            s = BeautifulSoup(f,"lxml")
+            titulo = s.find("div", class_="post-title")
+            if titulo:
+                titulo = titulo.get_text().strip()
+            lugar = s.find("div", class_="lugar")
+            if lugar:
+                lugar = lugar.find("p").get_text().strip()
+            poblacion = s.find("div", class_="poblacion")
+            if poblacion:
+                poblacion = poblacion.find("a").get_text().strip()
+            fecha = s.find("div", class_="fechas")
+            if fecha:
+                fecha = fecha.get_text().strip()
+            m = re.findall(r'\d{1,2}[\/\.\-]\d{1,2}[\/\.\-]\d{2,4}', fecha)
+
+            if len(m) >= 2:
+                inicio = datetime.strptime(m[0], '%d/%m/%Y')
+                fin    = datetime.strptime(m[1], '%d/%m/%Y')
+            elif len(m) == 1:
+                inicio = datetime.strptime(m[0], '%d/%m/%Y')
+                fin = inicio   # o fin = None
+            else:
+                inicio = fin = None
+            hora = s.find("div", class_="hora")
+            if hora:
+                hora = hora.get_text().strip()
+            else:
+                hora = "Desconocida"
+            categorias = s.find("div", class_="categoria")
+            if categorias:
+                categorias = categorias.find("a").get_text().strip()
+            descripcion_tag = s.find("div", class_="descripcion")
+            if descripcion_tag:
+                partes = []
+
+                # Recorremos párrafos y listas en orden
+                for elem in descripcion_tag.find_all(["p", "ul", "ol"], recursive=True):
+                    if elem.name == "p":
+                        partes.append(elem.get_text(" ", strip=True))
+                    elif elem.name == "ul":
+                        for li in elem.find_all("li", recursive=False):
+                            partes.append(f"   • {li.get_text(' ', strip=True)}")
+                    elif elem.name == "ol":
+                        for i, li in enumerate(elem.find_all("li", recursive=False), start=1):
+                            partes.append(f"   {i}. {li.get_text(' ', strip=True)}")
+
+                descripcion = "\n".join(partes)
+            else:
+                print("No hay descripción")
+
+            lista.append((titulo, lugar, poblacion, inicio, fin, hora, categorias, descripcion))
     return lista
 
 
-def imprimir_lista(cursor):
-    locale.setlocale(locale.LC_TIME, "es_ES") # activa formato en espaÃ±ol
-    
-    v = Toplevel()
-    v.title("NOTICIAS DE MUSIKALIA")
-    sc = Scrollbar(v)
-    sc.pack(side=RIGHT, fill=Y)
-    lb = Listbox(v, width = 150, yscrollcommand=sc.set)
-    for row in cursor:
-        lb.insert(END,row['titulo'])
-        lb.insert(END,"    Autor: "+ str(row['autor']))
-        lb.insert(END,"    Fecha: "+ datetime.strftime(row['fecha'], "%d de %B de %Y"))
-        lb.insert(END,"\n\n")
-    lb.pack(side=LEFT,fill=BOTH)
-    sc.config(command = lb.yview)
-
- 
 def almacenar_datos():
-    #define el esquema de la informaciÃ³n
-    schem = Schema(fecha=DATETIME(stored=True), titulo=TEXT(stored=True), enlace=ID, descripcion=TEXT, autor=ID(stored=True))
-    
-    #eliminamos el directorio del Ã­ndice, si existe
+    sch = Schema(titulo=TEXT(stored=True), lugar=TEXT(stored=True), poblacion=TEXT(stored=True), fecha_inicio=DATETIME(stored=True), fecha_fin=DATETIME(stored=True), hora=TEXT(stored=True), categorias=KEYWORD(stored=True, commas=True), descripcion=TEXT)
+
+    # eliminamos el directorio del índice, si existe
     if os.path.exists("Index"):
         shutil.rmtree("Index")
     os.mkdir("Index")
     
-    #creamos el Ã­ndice
-    ix = create_in("Index", schema=schem)
-    #creamos un writer para poder aÃ±adir documentos al indice
+    ix = create_in("Index", schema=sch)
     writer = ix.writer()
+
     i=0
-    lista=extraer_noticias()
-    for j in lista:
-        #aÃ±ade cada juego de la lista al Ã­ndice
-        writer.add_document(fecha=j[0], titulo=str(j[1]), enlace=str(j[2]), descripcion=str(j[3]), autor=str(j[4]))    
+    menus= extraer_eventos()
+    for r in menus:
+        writer.add_document(titulo=r[0], lugar=r[1], poblacion=r[2], fecha_inicio=r[3], fecha_fin=r[4], hora=r[5], categorias=r[6], descripcion=r[7])
         i+=1
-    writer.commit()
-    messagebox.showinfo("Fin de indexado", "Se han indexado "+str(i)+ " noticias")          
+    writer.commit()              
+    messagebox.showinfo("Fin de indexado", "Se han indexado "+str(i)+ " menus")  
 
 
-def buscar_autor():
-    def mostrar_lista(event):    
-        with ix.searcher() as searcher:
-            entrada = '"'+str(en.get().strip())+'"'
-            query = QueryParser("autor", ix.schema).parse(entrada)
-            results = searcher.search(query,limit=None)
-            imprimir_lista(results)
-    
-    
+def imprimir_lista_eventos(cursor):
     v = Toplevel()
-    v.title("BÃºsqueda por Autor")
-    l = Label(v, text="Seleccione autor a buscar:")
-    l.pack(side=LEFT)
+    v.title("LISTA DE EVENTOS")
+
+    sc = Scrollbar(v)
+    sc.pack(side=RIGHT, fill=Y)
+
+    lb = Listbox(v, width=150, yscrollcommand=sc.set)
+
+    for row in cursor:
+        # row puede ser Hit (dict-like)
+        titulo = row.get('titulo', '')
+        lugar = row.get('lugar', '')
+        poblacion = row.get('poblacion', '')
+
+        lb.insert(END, titulo or "—")
+        lb.insert(END, f"    Lugar: {lugar or '—'}")
+        lb.insert(END, f"    Población: {poblacion or '—'}")
     
-    ix=open_dir("Index")      
+
+    lb.pack(side=LEFT, fill=BOTH)
+    sc.config(command=lb.yview)
+    
+def listar():
+    ix = open_dir("Index")
     with ix.searcher() as searcher:
-        #lista de todas los autores
-        lista_autores = [i.decode('utf-8') for i in searcher.lexicon('autor')]
-    
-    en = Spinbox(v, values=lista_autores, state="readonly")
-    en.bind("<Return>", mostrar_lista)
-    en.pack(side=LEFT)
+        results = searcher.search(query.Every(), limit=None)
+        imprimir_lista_eventos(results)
 
-
-def buscar_fecha_y_titulo():
-    def mostrar_lista():
-        ix=open_dir("Index")   
+def eventos_por_poblacion():
+    def mostrar(event=None):
+        pob = en.get().strip()
+        if not pob:
+            messagebox.showwarning("Aviso", "Introduzca una población.")
+            return
+        ix = open_dir("Index") 
         with ix.searcher() as searcher:
-            s = re.compile('\d{8}').match(str(en.get()))
-            if s:
-                query = QueryParser("titulo", ix.schema).parse('fecha:['+ str(en.get()) +' TO] '+ str(en1.get()))
-                results = searcher.search(query,limit=None)
-                imprimir_lista(results)
-            else:
-                messagebox.showerror("ERROR", "formato de fecha incorrecto AAAAMMDD")
-    
-    v = Toplevel()
-    v.title("BÃºsqueda por Fecha y TÃ­tulo")
-    l = Label(v, text="Escriba una fecha (AAAAMMDD):")
-    l.pack(side=LEFT)   
-    en = Entry(v)
-    en.pack(side=LEFT)
-    
-    l1 = Label(v, text="Escriba palabras del tÃ­tulo:")
-    l1.pack(side=LEFT)
-    en1 = Entry(v, width=75)
-    en1.pack(side=LEFT)
-    
-    b =Button(v, text="Buscar", command=mostrar_lista)
-    b.pack(side=LEFT)
-    
-    
-def eliminar_por_descripcion():
-    def modificar(event):
-        ix=open_dir("Index") 
-        with ix.searcher() as searcher:
-            query = QueryParser("descripcion", ix.schema).parse(str(en.get()))
-            results = searcher.search(query, limit=None)
-            if len(results) > 0: # si hay algÃºn documento a borrar 
-                v = Toplevel()
-                v.title("Listado de Noticias a Borrar")
-                v.geometry('800x150')
-                sc = Scrollbar(v)
-                sc.pack(side=RIGHT, fill=Y)
-                lb = Listbox(v, yscrollcommand=sc.set)
-                lb.pack(side=BOTTOM, fill = BOTH)
-                sc.config(command = lb.yview)
-                for r in results:
-                    lb.insert(END,r['titulo'])
-                    lb.insert(END,'')
-                # pedimos confirmaciÃ³n
-                respuesta = messagebox.askyesno(title="Confirmar",message="Esta seguro que quiere eliminar estas noticias?")
-                if respuesta:
-                    writer = ix.writer()
-                    writer.delete_by_query(query)
-                    writer.commit()
-            else:
-                messagebox.showinfo("AVISO", "No hay ninguna noticia con esas palabras en la descripciÃ³n")
+            qp = QueryParser("poblacion", ix.schema)
+            q = qp.parse(f'"{pob}"')  # frase exacta
+            results = searcher.search(q, limit=None)
+            imprimir_lista_eventos(results)
 
     v = Toplevel()
-    v.title("Eliminar Noticias por DescripciÃ³n")
-    l = Label(v, text="Introduzca palabras en la descripciÃ³n:")
-    l.pack(side=LEFT)
-    en = Entry(v, width=75)
-    en.bind("<Return>", modificar)
-    en.pack(side=LEFT)
+    v.title("Eventos por población")
+    Label(v, text="Población:").pack(side=LEFT, padx=4)
+    en = Entry(v, width=40)
+    en.pack(side=LEFT, padx=4)
+    en.bind("<Return>", mostrar)
+    Button(v, text="Buscar", command=mostrar).pack(side=LEFT, padx=4)
 
-    
+def buscar_categoria_descripcion():
+    def ejecutar():
+        ix = open_dir("Index")
+        with ix.searcher() as searcher:
+            cat = sp.get()         # categoría seleccionada en el Spinbox
+            descripcion = '"' +en.get().strip()+ '"'
 
-def ventana_principal():       
-    root = Tk()
-    root.geometry("150x100")
+            # Query full-text para la descripción
+            parser = QueryParser("descripcion", ix.schema)
+            q_desc = parser.parse(descripcion) if descripcion else None
 
-    menubar = Menu(root)
-    
-    datosmenu = Menu(menubar, tearoff=0)
-    datosmenu.add_command(label="Cargar", command=almacenar_datos)
-    datosmenu.add_separator()   
-    datosmenu.add_command(label="Salir", command=root.quit)
-    
-    menubar.add_cascade(label="Datos", menu=datosmenu)
-    
-    buscarmenu = Menu(menubar, tearoff=0)
-    buscarmenu.add_command(label="Autor", command=buscar_autor)
-    buscarmenu.add_command(label="Fecha y TÃ­tulo", command=buscar_fecha_y_titulo)
-    buscarmenu.add_command(label="Eliminar por DescripciÃ³n", command=eliminar_por_descripcion)
-    
-    menubar.add_cascade(label="Buscar", menu=buscarmenu)
+            # Term exacto para la categoría (campo 'categorias' en el índice)
+            q_cat = query.Term("categorias", cat) if cat else None
+
+            # Combinamos:
+            if q_cat and q_desc:
+                q = query.And([q_cat, q_desc])
+            elif q_cat:
+                q = q_cat
+            elif q_desc:
+                q = q_desc
+            else:
+                q = None
+
+            if q is None:
+                results = []
+            else:
+                results = searcher.search(q, limit=None)
+
+            imprimir_lista_eventos(results)
+
+    v = Toplevel()
+    v.title("Categoría y Descripción")
+    Label(v, text="Categoría:").pack(side=LEFT, padx=4)
+
+    ix = open_dir("Index")
+    with ix.searcher() as searcher:
+        categorias = sorted([
+            (i.decode('utf-8', 'ignore') if isinstance(i, bytes) else str(i))
+            for i in searcher.lexicon('categorias')
+        ])
+    sp = Spinbox(v, values=categorias, state="readonly", width=40)
+    sp.pack(side=LEFT, padx=4)
+
+    Label(v, text="Descripción (palabras):").pack(side=LEFT, padx=4)
+    en = Entry(v, width=45)
+    en.pack(side=LEFT, padx=4)
+    Button(v, text="Buscar", command=ejecutar).pack(side=LEFT, padx=4)
+
+
+def eventos_noche():
+    def hhmm_a_minutos(hhmm):
+        """Convierte 'HH:MM' a minutos totales desde medianoche."""
+        if not re.match(r"^\d{2}:\d{2}$", hhmm):
+            return None  # formato incorrecto
+        h, m = hhmm.split(":")
+        try:
+            return int(h) * 60 + int(m)
+        except:
+            return None
+
+    ix = open_dir("Index")
+    with ix.searcher() as searcher:
+
+        # Obtener todos los eventos
+        todos = searcher.search(query.Every(), limit=None)
+
+        nocturnos = []
+        for h in todos:
+            hora_txt = h.get("hora", "").strip()
+
+            # Validar formato HH:MM
+            minutos = hhmm_a_minutos(hora_txt)
+            if minutos is None:
+                continue  # Saltamos eventos sin hora válida
+
+            # Condición nocturna
+            if minutos >= 12*60 or minutos <= 6*60:
+                nocturnos.append(h)
+
+        # Mostrar resultados
+        if not nocturnos:
+            messagebox.showinfo("Info", "No hay eventos nocturnos.")
+        else:
+            imprimir_lista_eventos(nocturnos)
+
+
+def buscar_titulo_y_fecha_inicio():
+
+    def ejecutar(event=None):
+        fecha_txt = e_fecha.get().strip()
+        titulo_pal = e_titulo.get().strip()
+
+        if not titulo_pal:
+            messagebox.showwarning("Aviso", "Debe escribir palabras del título.")
+            return
+
+        # Validar formato de fecha: YYYY/MM/DD
+        if not re.match(r"^\d{4}/\d{2}/\d{2}$", fecha_txt):
+            messagebox.showerror("ERROR", "Formato de fecha incorrecto. Use YYYY/MM/DD.")
+            return
+
+
+        try:
+            fecha_txt = datetime.strptime(fecha_txt, "%Y/%m/%d")
+            print(fecha_txt)
+        except ValueError:
+            messagebox.showerror("ERROR", "Fecha no válida.")
+            return
         
-    root.config(menu=menubar)
-    root.mainloop()
+        ix = open_dir("Index")
+        with ix.searcher() as searcher:
+            # Buscar por título (usa parser sin OrGroup → comportamiento AND)
+            parser_titulo = QueryParser("titulo", ix.schema)
+            q_titulo = parser_titulo.parse(titulo_pal)
 
-    
+            # Buscar por fecha exacta (texto literal)
+            q_fecha = query.Term("fecha_inicio", fecha_txt)
+
+            # Combinar ambas condiciones (titulo + fecha_inicio)
+            q_final = query.And([q_titulo, q_fecha])
+
+            results = searcher.search(q_final, limit=None)
+            imprimir_lista_eventos(results)
+
+    # --- Ventana de búsqueda ---
+    v = Toplevel()
+    v.title("Buscar por Título y Fecha de Inicio")
+
+    Label(v, text="Fecha inicio (YYYY/MM/DD):").pack(side=LEFT, padx=4)
+    e_fecha = Entry(v, width=12)
+    e_fecha.pack(side=LEFT, padx=4)
+    e_fecha.bind("<Return>", ejecutar)
+
+    Label(v, text="Título (palabras):").pack(side=LEFT, padx=4)
+    e_titulo = Entry(v, width=40)
+    e_titulo.pack(side=LEFT, padx=4)
+    e_titulo.bind("<Return>", ejecutar)
+
+    Button(v, text="Buscar", command=ejecutar).pack(side=LEFT, padx=6)
+
+
+def ventana_principal():
+    raiz = Tk()
+    raiz.geometry("350x140")
+    raiz.title("Eventos (Scraping + Whoosh)")
+
+    menu = Menu(raiz)
+
+    # Datos
+    menudatos = Menu(menu, tearoff=0)
+    menu.add_cascade(label="Datos", menu=menudatos)
+    menudatos.add_command(label="Cargar", command=cargar)
+    menudatos.add_command(label="Listar", command=listar)
+    menudatos.add_command(label="Salir", command=raiz.quit)
+
+    # Buscar y Modificar
+    menubuscar = Menu(menu, tearoff=0)
+    menu.add_cascade(label="Buscar y Modificar", menu=menubuscar)
+    menubuscar.add_command(label="Eventos por población", command=eventos_por_poblacion)
+    menubuscar.add_command(label="Categoría y Descripción", command=buscar_categoria_descripcion)
+    menubuscar.add_command(label="Fecha y Título", command=buscar_titulo_y_fecha_inicio)
+    # menubuscar.add_command(label="Modificar las fechas", command=modificar_fechas)
+    menubuscar.add_command(label="Eventos que se celebran por la noche", command=eventos_noche)
+
+    raiz.config(menu=menu)
+    raiz.mainloop()
 
 if __name__ == "__main__":
     ventana_principal()
