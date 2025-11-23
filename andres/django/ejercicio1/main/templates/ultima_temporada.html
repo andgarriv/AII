@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Última temporada{% endblock %}
+
+{% block content %}
+    <h1>Resultados de la última temporada</h1>
+
+    {% if not temporada %}
+        <p>No hay temporadas cargadas en la base de datos.</p>
+    {% else %}
+        <h2>Temporada {{ temporada.anyo }} - {{ temporada.anyo|add:"1" }}</h2>
+
+        {% if jornadas %}
+            {% for jornada in jornadas %}
+                <section style="margin-bottom: 20px;">
+                    <h3>Jornada {{ jornada.numero }} ({{ jornada.fecha }})</h3>
+
+                    {% with partidos=jornada.partido_set.all %}
+                        {% if partidos %}
+                            <ul>
+                                {% for partido in partidos %}
+                                    <li>
+                                        {{ partido.local.nombre }}
+                                        {{ partido.goles_local }} -
+                                        {{ partido.goles_visitante }}
+                                        {{ partido.visitante.nombre }}
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p>No hay partidos registrados para esta jornada.</p>
+                        {% endif %}
+                    {% endwith %}
+                </section>
+            {% endfor %}
+        {% else %}
+            <p>No hay jornadas registradas para esta temporada.</p>
+        {% endif %}
+    {% endif %}
+{% endblock %}

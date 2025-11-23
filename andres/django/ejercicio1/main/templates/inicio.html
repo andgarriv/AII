@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}Inicio{% endblock %}
+
+{% block content %}
+    <h1>Temporadas disponibles</h1>
+
+    {% if temporadas %}
+        <ul>
+            {% for temporada in temporadas %}
+                <li>
+                    Temporada {{ temporada.anyo }} - {{ temporada.anyo|add:"1" }}
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No hay temporadas registradas en la base de datos.</p>
+    {% endif %}
+{% endblock %}
