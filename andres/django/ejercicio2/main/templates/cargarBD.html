@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}
+  Cargar BD
+{% endblock %}
+
+{% block content %}
+  <h1>Cargar BD</h1>
+  <form method="post" enctype="multipart/form-data" onsubmit="return confirm('¿Está seguro que desea cargar la BD? Esta acción puede tardar.');">
+    {% csrf_token %}
+    <button type="submit" name="confirmar">Cargar</button>
+  </form>
+  {% if mensaje %}
+    <p>{{ mensaje }}</p>
+  {% endif %}
+{% endblock %}

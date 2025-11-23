@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}Inicio{% endblock %}
+
+{% block content %}
+    <h1>EJERCICIO DJANGO II</h1>
+    {% if vinos %}
+        <ul>
+            {% for vino in vinos %}
+                <li>
+                    {{ vino.nombre }} - {{ vino.denominacion }} - {{ vino.precio }}€
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No hay vinos registrados en la base de datos.</p>
+    {% endif %}
+
+{% endblock %}
