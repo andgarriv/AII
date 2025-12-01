@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang='es'>
+<head>
+  <meta charset='utf-8'>
+  <style>
+   {% block style_css %}{% endblock %}
+  </style>
+</head>
+<body>
+  <header> 
+      {% block encabezado %}{% endblock %}
+
+      <dd><a href='/'>Inicio</a></dd>
+      <dd><a href='/carga'>Cargar la BD</a></dd>
+      <dd><a href='/vinos_por_denominacion'>Vinos por denominación</a></dd>
+      <dd>
+        <a href="#" id="toggle-anyo">Vinos por año</a>
+        <form id="form-anyo" action='/vinos_por_anyo' method="get" style="display:none; margin-top:6px;">
+          <input type="text" name="anyo" placeholder="Introduce año (ej. 2018)" pattern="\d{2,4}" required />
+          <button type="submit">Buscar</button>
+        </form>
+      </dd>
+      <dd><a href='/vinos_por_uvas'>Vinos por uvas</a></dd>
+      <script>
+        (function(){
+          var toggle = document.getElementById('toggle-anyo');
+          var form = document.getElementById('form-anyo');
+          toggle && toggle.addEventListener('click', function(e){
+            e.preventDefault();
+            if(form.style.display === 'none') form.style.display = 'block'; else form.style.display = 'none';
+          });
+        })();
+      </script>
+    <hr>
+  </header>
+  <section>
+    {% block contenido %}{% endblock %}
+  </section>
+  {% block pie %}{% endblock %} 
+</body>
+</html>

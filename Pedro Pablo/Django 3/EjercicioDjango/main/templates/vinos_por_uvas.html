@@ -1,0 +1,28 @@
+<h1>Buscar vinos por tipo de uva</h1>
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Buscar</button>
+</form>
+
+<hr>
+
+{% if vinos %}
+    <h2>Vinos que contienen: {{ seleccion.nombre }}</h2>
+    <ul>
+        {% for vino in vinos %}
+            <li>
+                <strong>{{ vino.nombre }}</strong> — {{ vino.precio }} €
+                <br>
+                Uvas: 
+                {% for uva in vino.uvas.all %}
+                    {{ uva.nombre }}{% if not forloop.last %}, {% endif %}
+                {% endfor %}
+            </li>
+        {% endfor %}
+    </ul>
+
+{% elif vinos is not None %}
+    <p>No hay vinos que utilicen esa uva.</p>
+{% endif %}

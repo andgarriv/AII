@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block style_css %}
+table { border-collapse: collapse; width: 60%; }
+th, td { border: 1px solid #999; padding: 6px 10px; text-align: left; }
+th { background: #eee; }
+.empty { color: #666; }
+{% endblock %}
+
+{% block encabezado %}
+<h1>Vinos agrupados por denominación</h1>
+{% endblock %}
+
+{% block contenido %}
+  {% if denominaciones %}
+    <table>
+      <thead>
+        <tr>
+          <th>Denominación</th>
+          <th>N.º de vinos</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in denominaciones %}
+          <tr>
+            <td>{{ d.denominacion__nombre }}</td>
+            <td>{{ d.total }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="empty">No hay denominaciones registradas.</p>
+  {% endif %}
+{% endblock %}

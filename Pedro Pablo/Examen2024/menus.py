@@ -11,8 +11,6 @@ from whoosh.fields import Schema, TEXT, NUMERIC, KEYWORD, ID, DATETIME
 from whoosh.qparser import QueryParser
 import locale
 from whoosh import index, query
-from datetime import datetime, timedelta
-from whoosh.query import And, DateRange, Term
 
 
 PAGINAS = 3  #nÃºmero de pÃ¡ginas
