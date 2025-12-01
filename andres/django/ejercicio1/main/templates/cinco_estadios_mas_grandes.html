@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Cinco Estadios Más Grandes{% endblock %}
+
+{% block content %}
+    <h1>Cinco Estadios Más Grandes</h1>
+
+    {% if equipos %}
+        <ul>
+            {% for equipo in equipos %}
+                <li>
+                    <strong>{{ equipo.nombre }}</strong>
+                    <p>
+                    Estadio {{ equipo.estadio }} - Aforo: {{ equipo.aforo }}
+                    </p>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No hay equipos registrados en la base de datos.</p>
+    {% endif %}
+{% endblock %}

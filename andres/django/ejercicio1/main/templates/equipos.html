@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}Equipos{% endblock %}
+
+{% block content %}
+    <h1>Lista de Equipos</h1>
+
+    {% if equipos %}
+        <ul>
+            {% for equipo in equipos %}
+                <li>
+                    <a href="{% url 'detalle_equipo' equipo.nombre|urlencode %}">{{ equipo.nombre }}</a>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No hay equipos registrados en la base de datos.</p>
+    {% endif %}
+{% endblock %}

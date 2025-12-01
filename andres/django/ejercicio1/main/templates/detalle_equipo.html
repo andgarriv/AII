@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block title %}
+  Detalles del {{ equipo.nombre }}
+{% endblock %}
+
+{% block content %}
+  <h1>Detalles del {{ equipo.nombre }}</h1>
+
+  <ul>
+    <li>
+      <strong>Año de Fundación:</strong> {{ equipo.fundacion }}
+    </li>
+    <li>
+      <strong>Estadio:</strong> {{ equipo.estadio }}
+    </li>
+    <li>
+      <strong>Aforo:</strong> {{ equipo.aforo }}
+    </li>
+    <li>
+      <strong>Dirección:</strong> {{ equipo.direccion }}
+    </li>
+  </ul>
+
+  <a href="{% url 'equipos' %}">Volver a la lista de equipos</a>
+{% endblock %}

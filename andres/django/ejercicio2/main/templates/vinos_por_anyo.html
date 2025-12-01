@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Vinos por Año{% endblock %}
+
+{% block content %}
+  <h1>Vinos por año</h1>
+
+  <form method="post">
+    {% csrf_token %}
+    <label for="id_anyo_select">Año:</label>
+    <select id="id_anyo_select" name="anyo_select">
+      {% for y in years %}
+        <option value="{{ y }}" {% if y == anyo %}selected{% endif %}>{{ y }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" name="buscar">Buscar</button>
+  </form>
+
+  {% if mensaje %}
+    <p>{{ mensaje }}</p>
+  {% endif %}
+
+  {% if vinos %}
+    <h2>Resultados ({{ vinos|length }})</h2>
+    <ul>
+      {% for v in vinos %}
+        <li>{{ v.nombre }} — {{ v.precio }}€ — {{ v.denominacion.nombre }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+{% endblock %}

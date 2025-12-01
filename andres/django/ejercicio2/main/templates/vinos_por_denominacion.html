@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}Vinos por Denominación{% endblock %}
+
+{% block content %}
+  <h1>Vinos por denominación</h1>
+
+  {% for d in denominaciones %}
+    <section>
+      <h2>{{ d.nombre }} ({{ d.num_vinos }})</h2>
+      {% if d.vino_set.all %}
+        <ul>
+          {% for v in d.vino_set.all %}
+            <li>{{ v.nombre }} - {{ v.precio }}€</li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p>No hay vinos para esta denominación.</p>
+      {% endif %}
+    </section>
+  {% empty %}
+    <p>No hay denominaciones.</p>
+  {% endfor %}
+{% endblock %}

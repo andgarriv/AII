@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Cargar Datos{% endblock %}
+
+{% block content %}
+    <h1>Cargar Datos en la Base de Datos</h1>
+
+    <form method="post">
+        {% csrf_token %}
+        <p>¿Desea cargar los datos iniciales en la base de datos?</p>
+        <button type="submit" name="confirmar">Confirmar</button>
+    </form>
+
+    {% if mensaje %}
+        <p>{{ mensaje }}</p>
+    {% endif %}
+{% endblock %}

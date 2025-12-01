@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block title %}Vinos por Uva{% endblock %}
+
+{% block content %}
+  <h1>Vinos por uva</h1>
+
+  <form method="post">
+    {% csrf_token %}
+    <label for="id_uva">Selecciona una uva:</label>
+    <select id="id_uva" name="uva_select">
+      {% for u in uvas %}
+        <option value="{{ u.nombre }}" {% if u.nombre == uva_seleccionada %}selected{% endif %}>{{ u.nombre }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit">Buscar</button>
+  </form>
+
+  {% if uva_seleccionada %}
+    <h2>Resultados para: {{ uva_seleccionada }}</h2>
+  {% endif %}
+
+  {% if vinos %}
+    <ul>
+      {% for v in vinos %}
+        <li>
+          <strong>{{ v.nombre }}</strong> — {{ v.precio }}€ —
+          Uvas:
+          {% for uv in v.uvas.all %}
+            {{ uv.nombre }}{% if not forloop.last %}, {% endif %}
+          {% endfor %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% elif uva_seleccionada %}
+    <p>No se encontraron vinos para esa uva.</p>
+  {% endif %}
+{% endblock %}
