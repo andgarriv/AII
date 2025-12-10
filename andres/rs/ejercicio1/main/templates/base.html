@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Inicio{% endblock %}</title>
+    <style>
+        /* Estilo sencillo de menú superior */
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        .navbar {
+            background-color: #333;
+            color: #fff;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+        }
+        .navbar a {
+            color: #fff;
+            text-decoration: none;
+            margin-right: 15px;
+        }
+        .navbar a:hover {
+            text-decoration: underline;
+        }
+        .container {
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Menú superior -->
+    <div class="navbar">
+        <a href="{% url 'inicio' %}">Inicio</a>
+        <a href="{% url 'cargar_bd' %}">Cargar BD</a>
+        <a href="{% url 'load_rs' %}">Cargar RS</a>
+		<a href="{% url 'recomendar_peliculas_usuarios' %}">Recomendar Pel&iacute;culas a un usuario (Usuario)</a>
+		<a href="{% url 'recomendar_peliculas_usuarios_items' %}">Recomendar Pel&iacute;culas a un usuario (Items)</a>
+        <a href="{% url 'recomendar_usuarios_peliculas' %}">Recomendar Usuarios para una pel&iacute;cula</a>
+        <a href="{% url 'peliculas_similares' %}">Mostrar Pel&iacute;culas similares a una</a>
+        <a href="{% url 'puntuaciones_usuario' %}">Buscar Usuario</a>
+    </div>
+
+    <div class="container">
+        {% block content %}
+        {% endblock %}
+    </div>
+</body>
+</html>
