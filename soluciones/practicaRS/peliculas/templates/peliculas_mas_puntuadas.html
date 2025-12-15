@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %}Películas Más Puntuadas{% endblock %}
+
+{% block content %}
+<h2>Películas Más Puntuadas</h2>
+
+{% for info in peliculas_info %}
+    <div style="margin-bottom: 30px; border: 1px solid #ddd; padding: 15px; border-radius: 5px;">
+        <h3>{{ info.pelicula.titulo }}</h3>
+        <p><strong>Número de Puntuaciones:</strong> {{ info.num_puntuaciones }}</p>
+
+        <h4>Tres películas más similares:</h4>
+        {% if info.items %}
+            <ul>
+                {% for pelicula, coeficiente in info.items %}
+                    <li>
+                        <strong>Título:</strong> {{ pelicula.titulo }}<br>
+                        <strong>ID IMDB:</strong> {{ pelicula.idIMDB }}<br>
+                        <strong>Coeficiente de Similaridad:</strong> {{ coeficiente|floatformat:2 }}
+                    </li>
+                    <br>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No hay recomendaciones disponibles.</p>
+        {% endif %}
+    </div>
+{% endfor %}
+{% endblock %}

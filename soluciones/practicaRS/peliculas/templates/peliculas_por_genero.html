@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block title %}Películas por Género{% endblock %}
+
+{% block content %}
+    <h2>Buscar Películas por Género</h2>
+
+    <!-- Formulario -->
+    <form method="POST">
+        {% csrf_token %}
+        <label for="genero">Seleccione un género:</label>
+        <select name="genero" id="genero">
+            {% for genero in generos %}
+                <option value="{{ genero }}">{{ genero }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit">Buscar</button>
+    </form>
+
+    <!-- Resultados -->
+    {% if genero_seleccionado %}
+        <h3>Películas en el género: {{ genero_seleccionado }}</h3>
+        {% if peliculas_por_director %}
+            {% for director, peliculas in peliculas_por_director.items %}
+                <h4>Director: {{ director }}</h4>
+                <ul>
+                    {% for pelicula in peliculas %}
+                        <li>
+                            <strong>Título:</strong> {{ pelicula.titulo }} <br>
+                            <strong>ID IMDB:</strong> {{ pelicula.idIMDB }} <br>
+                            <strong>Géneros:</strong> {{ pelicula.generos }}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endfor %}
+        {% else %}
+            <p>No se encontraron películas en este género.</p>
+        {% endif %}
+    {% endif %}
+{% endblock %}

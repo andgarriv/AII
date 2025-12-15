@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block title %}Recomendar Usuarios{% endblock %}
+
+{% block content %}
+<h2>Recomendar Películas</h2>
+
+<!-- Formulario para ingresar el título de la película -->
+<form method="POST">
+    {% csrf_token %}
+    <label for="titulo">Ingrese el título de la película:</label>
+    <input type="text" name="titulo" id="titulo" placeholder="Título de la película" required>
+    <button type="submit">Recomendar</button>
+</form>
+
+<!-- Mostrar resultados de recomendaciones -->
+{% if pelicula %}
+    <h3>Película: {{ pelicula.titulo }}</h3>
+    <h4>Recomendaciones:</h4>
+    {% if recomendaciones %}
+        <ul>
+            {% for rec in recomendaciones %}
+                <li>
+                    <strong>Título:</strong> {{ rec.titulo }}<br>
+                    <strong>Coeficiente de Recomendación:</strong> {{ rec.coeficiente }}
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No se encontraron recomendaciones para esta película.</p>
+    {% endif %}
+{% endif %}
+
+<!-- Mensaje de error si no se encuentra la película -->
+{% if error %}
+    <p style="color: red;">{{ error }}</p>
+{% endif %}
+{% endblock %}

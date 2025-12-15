@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Datos Cargados</title>
+</head>
+<body>
+    <h1>Carga Exitosa</h1>
+    <p>Se han almacenado los siguientes registros:</p>
+    <ul>
+        <li>Películas: {{ peliculas_count }}</li>
+        <li>Puntuaciones: {{ puntuaciones_count }}</li>
+    </ul>
+    <a href="{% url 'homepage' %}">Volver a Inicio</a>
+</body>
+</html>

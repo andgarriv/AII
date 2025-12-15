@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Confirmar Carga de Datos</title>
+</head>
+<body>
+    <h1>¿Desea cargar la base de datos?</h1>
+    <p>Esta acción eliminará todos los registros existentes y cargará los nuevos datos.</p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit">Sí, Cargar Base de Datos</button>
+        <a href="{% url 'homepage' %}">Cancelar</a>
+    </form>
+</body>
+</html>
